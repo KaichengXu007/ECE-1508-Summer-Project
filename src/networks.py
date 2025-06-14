@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.utils.spectral_norm as spectral_norm
 
 class Generator(nn.Module):
     def __init__(self, latent_dim, num_classes, img_channels=1, img_size=28, embed_size=100):
@@ -56,21 +57,22 @@ class Discriminator(nn.Module):
 
         # Discriminator's main convolutional block (now correctly named and registered)
         self.conv_block = nn.Sequential(
-            # Input channels will be img_channels + num_classes due to conditional concatenation
-            nn.Conv2d(self.img_channels + self.num_classes, 64, kernel_size=4, stride=2, padding=1), # 28x28 -> 14x14
+            # 将 spectral_norm 应用于卷积层
+            spectral_norm(nn.Conv2d(self.img_channels + self.num_classes, 64, kernel_size=4, stride=2, padding=1)),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1), # 14x14 -> 7x7
+            spectral_norm(nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1)),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1), # 7x7 -> 3x3
+            spectral_norm(nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1)),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Flatten(),
-            nn.Linear(256 * 3 * 3, 1), # Final output for discriminator (binary classification)
-            nn.Sigmoid() # Output probability
+            # 也应用于全连接层
+            spectral_norm(nn.Linear(256 * 3 * 3, 1)),
+            nn.Sigmoid()
         )
 
     def forward(self, img, labels):

@@ -64,11 +64,13 @@ def train(epochs, batch_size, latent_dim, lr, beta1, device, save_interval):
 
             # (1) 更新判别器：最大化 D(x, c) + D(G(z, c), c)
             netD.zero_grad()
-            
-            # 训练真实样本
-            label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
+        
+            # 训练真实样本，只修改真实样本的标签
+            real_label_smooth = 0.9 # 定义平滑标签
+            label = torch.full((b_size,), real_label_smooth, dtype=torch.float, device=device)
             output = netD(real_images, real_labels_one_hot).view(-1)
             errD_real = criterion(output, label)
+
             errD_real.backward()
             D_x = output.mean().item()
 
