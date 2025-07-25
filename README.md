@@ -1,6 +1,4 @@
-## 项目结构 (Project Structure)
-
-本项目的代码和数据遵循一个清晰、模块化的目录结构，以便于维护和扩展。
+## Project Structure
 
 ```bash
 ECE-1508-Summer-Project/
@@ -42,12 +40,3 @@ ECE-1508-Summer-Project/
 ├── README.md
 └── requirements.txt
 ```
-
-### 目录说明
-
-* **`data/`**: 存放所有原始数据和预处理后的数据文件。
-* **`src/`**: 存放所有 Python 源代码。
-* **`output/`**: 存放训练过程中生成的图片和模型文件。
-* **`README.md`**: 项目说明文档。
-* **`requirements.txt`**: 项目依赖的 Python 库列表。
-* **`.gitignore`**: 指定 Git 版本控制应忽略的文件和目录。
