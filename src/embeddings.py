@@ -143,11 +143,11 @@ if __name__ == "__main__":
 
 
     '''create sampled dataset, comment if don need it'''
-    # os.makedirs(DEST_IMG_DIR, exist_ok=True)
-    # for file_name in tqdm(df["file_name"], desc="Copying images"):
-    #     src_path = os.path.join(SOURCE_IMG_DIR, file_name)
-    #     dst_path = os.path.join(DEST_IMG_DIR, file_name)
-    #     shutil.copyfile(src_path, dst_path)
+    os.makedirs(DEST_IMG_DIR, exist_ok=True)
+    for file_name in tqdm(df["file_name"], desc="Copying images"):
+        src_path = os.path.join(SOURCE_IMG_DIR, file_name)
+        dst_path = os.path.join(DEST_IMG_DIR, file_name)
+        shutil.copyfile(src_path, dst_path)
 
     # read
     # df = pd.read_parquet("caps.parquet")
