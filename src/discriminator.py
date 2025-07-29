@@ -38,19 +38,30 @@ class Discriminator(nn.Module):
 
         # Image processing path
         self.image_conv_blocks = nn.Sequential(
-            # First Conv Block
+            # 256→128
             nn.Conv2d(image_channels, base_channels, 4, 2, 1),
+            nn.BatchNorm2d(base_channels),
             nn.LeakyReLU(0.2, inplace=True),
 
-            # Second Conv Block
+            # 128→64
+            nn.Conv2d(base_channels, base_channels, 4, 2, 1),
+            nn.BatchNorm2d(base_channels),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            # 64→32
+            nn.Conv2d(base_channels, base_channels, 4, 2, 1),
+            nn.BatchNorm2d(base_channels),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            # 32→16
             nn.Conv2d(base_channels, base_channels * 2, 4, 2, 1),
             nn.BatchNorm2d(base_channels * 2),
             nn.LeakyReLU(0.2, inplace=True),
 
-            # Self-Attention Layer
+            # Self-Attention Layer at 16*16
             SelfAttention(base_channels * 2),
 
-            # Third Conv Block
+            # 16→8
             nn.Conv2d(base_channels * 2, base_channels * 4, 4, 2, 1),
             nn.BatchNorm2d(base_channels * 4),
             nn.LeakyReLU(0.2, inplace=True),
@@ -74,10 +85,18 @@ class Discriminator(nn.Module):
         # Assuming concatenation of flattened image features and projected embedding
         # Flattened image features: (batch_size, base_channels * 8 * 8 * 8) based on 8x8 spatial output
         # Projected embedding: (batch_size, base_channels * 8 * 4 * 4) based on 4x4 spatial target
-        # Combined flattened features size: (base_channels * 8 * 8 * 8) + (base_channels * 8 * 4 * 4) = 32768 + 8192 = 40960
+        # Combined flattened features size: (base_channels * 8 * 4 * 4) + (base_channels * 8 * 4 * 4) = 8192 + 8192 = 16384
+
+        with torch.no_grad():
+            img_dummy = torch.zeros(1, image_channels, 256, 256)
+            emb_dummy = torch.zeros(1, embedding_dim)
+
+            img_n = self.image_conv_blocks(img_dummy).view(1, -1).size(1)
+            emb_n = self.embedding_projection(emb_dummy).view(1, -1).size(1)
+            final_in = img_n + emb_n
 
         self.final_layer = nn.Sequential(
-            nn.Linear(40960, 1), # Corrected input size to match concatenated features
+            nn.Linear(final_in, 1), # Corrected input size to match concatenated features
             nn.Sigmoid() # Output probability
         )
 

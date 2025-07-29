@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from discriminator import SelfAttention
+from src.discriminator import SelfAttention
 
 class Generator(nn.Module):
     """
@@ -48,9 +48,24 @@ class Generator(nn.Module):
         )
 
         # 最终层：32x32 -> 64x64 生成最终图像
+        self.upsample_4 = nn.Sequential(
+            nn.ConvTranspose2d(base_channels, base_channels, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(base_channels),
+            nn.ReLU(True)
+        )
+
+        # 64→128
+        self.upsample_5 = nn.Sequential(
+            nn.ConvTranspose2d(base_channels,
+                               base_channels, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(base_channels),
+            nn.ReLU(True)
+        )
+        # 128→256
         self.final_layer = nn.Sequential(
-            nn.ConvTranspose2d(base_channels, image_channels, 4, 2, 1, bias=False),
-            nn.Tanh() # 将输出像素值缩放到 [-1, 1] 范围
+            nn.ConvTranspose2d(base_channels,
+                               image_channels, 4, 2, 1, bias=False),
+            nn.Tanh()
         )
 
     def forward(self, noise, embeddings):
@@ -66,6 +81,8 @@ class Generator(nn.Module):
         x = self.upsample_2(x)
         x = self.attention(x)
         x = self.upsample_3(x)
+        x = self.upsample_4(x)
+        x = self.upsample_5(x)
         x = self.final_layer(x)
         
         return x
