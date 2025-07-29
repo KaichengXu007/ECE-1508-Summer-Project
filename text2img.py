@@ -41,7 +41,6 @@ def prompt2img():
 
     # 6) sample noise + generate
     z = torch.randn(1, latent_dim, device=device)
-    embed = roberta_embed(prompt, tokenizer, text_model, device, pooling="mean").to(device)
 
     with torch.no_grad():
         fake = G(z, embed)  # both are 4-D now
