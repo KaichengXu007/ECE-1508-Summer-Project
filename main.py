@@ -7,10 +7,11 @@ from src.train import train
 
 def main():
     # 超参数设置
-    epochs = 100           # 训练的总epoch数
-    batch_size = 8       # 批次大小
-    latent_dim = 100      # 噪声向量维度
-    lr = 0.0002           # 学习率
+    epochs = 200          # 训练的总epoch数
+    batch_size = 16       # 批次大小
+    latent_dim = 150      # 噪声向量维度
+    lr_D = 0.0001           # 学习率
+    lr_G = 0.0004
 
 
     # 设备选择
@@ -21,14 +22,16 @@ def main():
     os.makedirs('./models', exist_ok=True)
     os.makedirs('./results', exist_ok=True)
 
-    parquet = './data/roberta-base_train_caps.parquet'
+    # parquet = './data/roberta-base_train_caps.parquet'
+    parquet = './data/CLIP_train_caps.parquet'
     img_dir = './data/train_25k'
-    embed_dim = 768
+    # embed_dim = 768
+    embed_dim = 512
 
     # 运行训练
     train(
         parquet, img_dir,
-        epochs, batch_size, lr, latent_dim,
+        epochs, batch_size, lr_D, lr_G, latent_dim,
         embed_dim
     )
 
