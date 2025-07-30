@@ -9,6 +9,9 @@ from transformers import RobertaTokenizer, RobertaModel
 import pandas as pd
 import pyarrow  # used for parquet
 import open_clip
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import Dataset, DataLoader
 
 
 @torch.no_grad()
@@ -46,7 +49,7 @@ def clip_sentence_embed(captions, model, tokenizer, device, batch_size=256):
     captions : List[str] → Tensor [N, 512]  (CPU)
     """
     all_vecs = []
-    for i in range(0, len(captions), batch_size):
+    for i in tqdm(range(0, len(captions), batch_size)):
         batch = captions[i:i + batch_size]
         tokens = tokenizer(batch).to(device)  # [B, L]
         vec = model.encode_text(tokens).float()  # [B, 512]
@@ -55,52 +58,75 @@ def clip_sentence_embed(captions, model, tokenizer, device, batch_size=256):
 
 
 if __name__ == "__main__":
-    # init settings
-    SOURCE_JSON = 'data/annotations/captions_train2017.json'
-    SOURCE_IMG_DIR = 'data/train2017'
-    DEST_IMG_DIR = 'data/train_25k'
+    dataset = 'fashion'
+    # dataset = 'coco'
+    # MODEL_NAME = "roberta-base"
+    MODEL_NAME = "CLIP"
 
-    SAMPLE_SIZE = 25000
     random.seed(42)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(device)
-
-    with open(SOURCE_JSON, 'r') as f:
-        data = json.load(f)
-
-    # sample image
-    images = data['images']
-    annotations = data['annotations']
-
-    sampled_images = random.sample(images, SAMPLE_SIZE)
-    sampled_ids = {img['id'] for img in sampled_images}
-
-    # image_id → captions
-    id2captions = defaultdict(list)
-    for ann in annotations:
-        if ann['image_id'] in sampled_ids:
-            id2captions[ann['image_id']].append(ann['caption'])
-
-    captions = []
-    file_names = []
-    img_ids = []
     batch_size = 512  # 1024
     embeds = []
 
-    for img in sampled_images:
-        img_id = img['id']
-        # pick first cap
-        cap = id2captions[img_id][0]
-        captions.append(cap)
-        file_names.append(img['file_name'])
-        img_ids.append(img_id)
+    if dataset == 'fashion':
+        # fashion-mnist
+        root = "../data"
+        ds_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=False)
+
+        label2text = [
+            "T-shirt or top", "trouser", "pullover", "dress", "coat",
+            "sandal", "shirt", "sneaker", "bag", "ankle boot"
+        ]
+
+        captions = [
+            f"A grayscale image of a {label2text[label]}."
+            for label in ds_train.targets
+        ]
+
+        df = pd.DataFrame({
+            "idx": range(len(ds_train)),  # 0‥59_999
+            "caption": captions
+        })
+    else:
+
+        # init settings
+        SOURCE_JSON = '../data/annotations/captions_train2017.json'
+        SOURCE_IMG_DIR = '../data/train2017'
+        DEST_IMG_DIR = '../data/train_25k'
+
+        SAMPLE_SIZE = 25000
+
+        with open(SOURCE_JSON, 'r') as f:
+            data = json.load(f)
+
+        # sample image
+        images = data['images']
+        annotations = data['annotations']
+
+        sampled_images = random.sample(images, SAMPLE_SIZE)
+        sampled_ids = {img['id'] for img in sampled_images}
+
+        # image_id → captions
+        id2captions = defaultdict(list)
+        for ann in annotations:
+            if ann['image_id'] in sampled_ids:
+                id2captions[ann['image_id']].append(ann['caption'])
+
+        captions = []
+        file_names = []
+        img_ids = []
+
+        for img in sampled_images:
+            img_id = img['id']
+            # pick first cap
+            cap = id2captions[img_id][0]
+            captions.append(cap)
+            file_names.append(img['file_name'])
+            img_ids.append(img_id)
 
     # load model
-
-    MODEL_NAME = "roberta-base"
-    # MODEL_NAME = "CLIP"
-
     if MODEL_NAME == "roberta-base":
         tokenizer = RobertaTokenizer.from_pretrained(MODEL_NAME)
         model = RobertaModel.from_pretrained(MODEL_NAME)
@@ -129,18 +155,21 @@ if __name__ == "__main__":
         embeds = embeds.numpy()  # (N, 512)
 
     # store result
+    if dataset == 'fashion':
+        df['embedding'] = [vec.tolist() for vec in embeds]
+    else:
+        print(len(captions), len(file_names))
+        df = pd.DataFrame({
+            "file_name": file_names,
+            "caption": captions,
+            "embedding": [vec.tolist() for vec in embeds]
+        })
 
-    print(len(captions), len(file_names))
-    df = pd.DataFrame({
-        "file_name": file_names,
-        "caption": captions,
-        "embedding": [vec.tolist() for vec in embeds]
-    })
-    df.to_parquet(f'data/{MODEL_NAME}_train_caps.parquet',
+    df.to_parquet(f'../data/{dataset}_{MODEL_NAME}_train_caps.parquet',
                   engine="pyarrow",
                   compression="zstd",
                   index=False)
-
+    print('embeds saved')
 
     '''create sampled dataset, comment if don need it'''
     # os.makedirs(DEST_IMG_DIR, exist_ok=True)
