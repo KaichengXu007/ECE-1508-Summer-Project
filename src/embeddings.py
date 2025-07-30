@@ -56,9 +56,9 @@ def clip_sentence_embed(captions, model, tokenizer, device, batch_size=256):
 
 if __name__ == "__main__":
     # init settings
-    SOURCE_JSON = 'data/annotations/captions_train2017.json'
-    SOURCE_IMG_DIR = 'data/train2017'
-    DEST_IMG_DIR = 'data/train_25k'
+    SOURCE_JSON = '../data/annotations/captions_train2017.json'
+    SOURCE_IMG_DIR = '../data/train_25k'
+    DEST_IMG_DIR = '../data/train_25k'
 
     SAMPLE_SIZE = 25000
     random.seed(42)
@@ -98,8 +98,8 @@ if __name__ == "__main__":
 
     # load model
 
-    MODEL_NAME = "roberta-base"
-    # MODEL_NAME = "CLIP"
+    # MODEL_NAME = "roberta-base"
+    MODEL_NAME = "CLIP"
 
     if MODEL_NAME == "roberta-base":
         tokenizer = RobertaTokenizer.from_pretrained(MODEL_NAME)
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         "caption": captions,
         "embedding": [vec.tolist() for vec in embeds]
     })
-    df.to_parquet(f'data/{MODEL_NAME}_train_caps.parquet',
+    df.to_parquet(f'../data/{MODEL_NAME}_train_caps.parquet',
                   engine="pyarrow",
                   compression="zstd",
                   index=False)
