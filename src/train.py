@@ -1,4 +1,6 @@
 import os
+
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.optim import Adam
@@ -14,6 +16,7 @@ import numpy as np
 import torchvision.transforms.functional as TF
 from tqdm import tqdm
 import time
+import json
 
 
 def save_real_fake_grid(real_imgs, fake_imgs, captions, path, n=8):
@@ -82,8 +85,8 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
     G = Generator(latent_dim, embed_dim).to(device)
     D = Discriminator(embed_dim).to(device)
     # opt & loss
-    opt_G = Adam(G.parameters(), lr=lr, betas=(0.5, 0.999))
-    opt_D = Adam(D.parameters(), lr=lr, betas=(0.5, 0.999))
+    opt_G = Adam(G.parameters(), lr=lr[0], betas=(0.5, 0.999))
+    opt_D = Adam(D.parameters(), lr=lr[1], betas=(0.5, 0.999))
     criterion = nn.BCELoss()
 
     # fid metric
@@ -96,14 +99,21 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
     print('Start training...')
 
     start_time = time.time()
+    epoch_loss_D_list = []
+    epoch_loss_G_list = []
+    clip_list = []
+    fid_list = []
+    time_list =[]
+
     for e in range(1, epochs + 1):
         start_time = time.time()
         G.train()
         D.train()
         epoch_loss_G, epoch_loss_D, n_batches = 0., 0., 0
 
-        fid_metric.reset()
         clip_scores_epoch = []
+        fid_scores_epoch = []
+        fid_metric.reset()
 
         for real_imgs, embeds, captions in tqdm(loader):
             real_imgs, embeds = real_imgs.to(device), embeds.to(device)
@@ -120,7 +130,7 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
             loss_D_fake = criterion(d_fake, fake_label)
             loss_D = (loss_D_real + loss_D_fake) * 0.5  # smooth
 
-            opt_D.zero_grad()  # ★ 改这里
+            opt_D.zero_grad()
             loss_D.backward()
             opt_D.step()
 
@@ -128,19 +138,20 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
             pred = D(fake_imgs, embeds)
             loss_G = criterion(pred, real_label)
 
-            opt_G.zero_grad()  # ★ 改这里
+            opt_G.zero_grad()
             loss_G.backward()
             opt_G.step()
 
             epoch_loss_D += loss_D.item()
             epoch_loss_G += loss_G.item()
 
-            # FID 累计
+            # FID
             fid_metric.update((real_imgs + 1) * 0.5, real=True)  # (0,1)
             fid_metric.update((fake_imgs + 1) * 0.5, real=False)
 
             # CLIP
-            clip_scores_epoch.append(clip_score(fake_imgs, captions).item())
+            c_score = clip_score(fake_imgs, captions).item()
+            clip_scores_epoch.append(c_score)
 
             n_batches += 1
 
@@ -150,13 +161,18 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
 
         print(f"Epoch {e}/{epochs} | D: {epoch_loss_D:.4f} | G: {epoch_loss_G:.4f} | elapsed time: {elapsed_time:.2f}")
 
+        epoch_loss_D_list.append(epoch_loss_D)
+        epoch_loss_G_list.append(epoch_loss_G)
+        time_list.append(elapsed_time)
+
         # Save checkpoints every 10 epochs
         if e % 10 == 0 or e == 1:
-            G.eval()
             fid_value = fid_metric.compute().item()
             clip_mean = sum(clip_scores_epoch) / len(clip_scores_epoch)
 
             print(f"---------FID: {fid_value:.2f}  CLIP: {clip_mean:.3f} ---------")
+            fid_list.append(fid_value)
+            clip_list.append(clip_mean)
 
             # Save model weights
             torch.save(G.state_dict(), f"{models_dir}/generator_{e}.pth")
@@ -187,9 +203,22 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
     torch.save(G.state_dict(), f"{models_dir}/generator_final.pth")
     torch.save(D.state_dict(), f"{models_dir}/discriminator_final.pth")
 
+    data_dict = {
+        'epoch_loss_D': epoch_loss_D_list,
+        'epoch_loss_G': epoch_loss_G_list,
+        'clip': clip_list,
+        'fid': fid_list,
+        'time': time_list,
+    }
+
+    # save training process
+    with open('results/result.json', 'w') as f:
+        json.dump(data_dict, f)
+    print('result saved')
+
     print("Training finished!")
 
 
 if __name__ == '__main__':
     train(parquet="../data/roberta-base_train_caps.parquet", img_dir="../data/train_25k", epochs=50, batch_size=4,
-          lr=0.0001, latent_dim=64, embed_dim=768)
+          lr=[0.0001, 0.0004], latent_dim=64, embed_dim=768)
