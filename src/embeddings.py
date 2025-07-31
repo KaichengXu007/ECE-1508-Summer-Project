@@ -80,15 +80,33 @@ if __name__ == "__main__":
             "sandal", "shirt", "sneaker", "bag", "ankle boot"
         ]
 
-        captions = [
-            f"A grayscale image of a {label2text[label]}."
-            for label in ds_train.targets
+        # captions = [
+        #     f"A grayscale image of a {label2text[label]}."
+        #     for label in ds_train.targets
+        # ]
+        #
+
+        # randomly choose caption from templates
+        caption_templates = [
+            "A grayscale image of a {item}.",
+            "This is a grayscale image showing a {item}.",
+            "A grayscale photo of a {item}.",
+            "An example of a {item} in grayscale.",
+            "This is a {item} sample.",
+            "A {item} in grayscale",
+            "{item}"
         ]
 
+        captions = [
+            random.choice(caption_templates).format(item=label2text[int(label)])
+            for label in ds_train.targets
+        ]
         df = pd.DataFrame({
             "idx": range(len(ds_train)),  # 0‥59_999
             "caption": captions
         })
+
+        print(captions[:10])
     else:
 
         # init settings

@@ -12,6 +12,8 @@ import open_clip
 import matplotlib.pyplot as plt
 import numpy as np
 import torchvision.transforms.functional as TF
+from tqdm import tqdm
+import time
 
 
 def save_real_fake_grid(real_imgs, fake_imgs, captions, path, n=8):
@@ -92,8 +94,10 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
     tokenizer = open_clip.get_tokenizer('ViT-B-32')
 
     print('Start training...')
-    for e in range(1, epochs + 1):
 
+    start_time = time.time()
+    for e in range(1, epochs + 1):
+        start_time = time.time()
         G.train()
         D.train()
         epoch_loss_G, epoch_loss_D, n_batches = 0., 0., 0
@@ -101,7 +105,7 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
         fid_metric.reset()
         clip_scores_epoch = []
 
-        for real_imgs, embeds, captions in loader:
+        for real_imgs, embeds, captions in tqdm(loader):
             real_imgs, embeds = real_imgs.to(device), embeds.to(device)
             bs = real_imgs.size(0)
             real_label = torch.ones(bs, 1, device=device)
@@ -140,10 +144,11 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
 
             n_batches += 1
 
-        # print(f"Epoch {e}/{epochs} | D: {loss_D.item():.4f} | G: {loss_G.item():.4f}")
-
         epoch_loss_D /= n_batches
         epoch_loss_G /= n_batches
+        elapsed_time = time.time() - start_time
+
+        print(f"Epoch {e}/{epochs} | D: {epoch_loss_D:.4f} | G: {epoch_loss_G:.4f} | elapsed time: {elapsed_time:.2f}")
 
         # Save checkpoints every 10 epochs
         if e % 10 == 0 or e == 1:
@@ -151,9 +156,7 @@ def train(parquet, img_dir, epochs, batch_size, lr, latent_dim, embed_dim):
             fid_value = fid_metric.compute().item()
             clip_mean = sum(clip_scores_epoch) / len(clip_scores_epoch)
 
-            print(f"[{e}/{epochs}]  "
-                  f"D: {epoch_loss_D:.4f}  G: {epoch_loss_G:.4f}  "
-                  f"FID: {fid_value:.2f}  CLIP: {clip_mean:.3f}")
+            print(f"---------FID: {fid_value:.2f}  CLIP: {clip_mean:.3f} ---------")
 
             # Save model weights
             torch.save(G.state_dict(), f"{models_dir}/generator_{e}.pth")
