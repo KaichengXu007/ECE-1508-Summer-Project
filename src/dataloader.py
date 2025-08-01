@@ -89,7 +89,7 @@ def get_fashion_dataloader(parquet_path: str,
                            batch_size: int = 64,
                            train: bool = True,
                            shuffle: bool = True,
-                           num_workers: int = 15):
+                           num_workers: int = 12):
     """
     Returns a DataLoader for the FashionTextImageDataset.
     """

@@ -92,7 +92,7 @@ def weights_init(m):
         nn.init.constant_(m.bias.data, 0)
 
 # Training function
-def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_dim, resume_epoch):
+def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_dim):
     loader = get_fashion_dataloader(parquet, img_dir, batch_size)
     G = Generator(latent_dim, embed_dim).to(device)
     D = Discriminator(embed_dim).to(device)
@@ -205,17 +205,7 @@ def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_di
             with torch.no_grad():
                 samples = G(fixed_noise, fixed_embeds)
                 save_image((samples + 1) * 0.5, f"{results_dir}/sample_epoch{e}.png", nrow=4)
-            # with torch.no_grad():
-            #     # take first batch of embeddings for sampling
-            #     sample_embeds = next(iter(loader))[1][:16].to(device)
-            #     sample_z = torch.randn(sample_embeds.size(0), latent_dim, device=device)
-            #     samples = G(sample_z, sample_embeds)
-            #     save_image((samples + 1) * 0.5, f"{results_dir}/sample_epoch{e}.png", nrow=4)
-                # # take first batch of embeddings for sampling
-                # sample_embeds = next(iter(loader))[1][:16].to(device)
-                # sample_z = torch.randn(sample_embeds.size(0), latent_dim, device=device)
-                # samples = G(sample_z, sample_embeds)
-                # save_image((samples + 1) * 0.5, f"{results_dir}/sample_epoch{e}.png", nrow=4)
+
                 real_batch, embed_batch, cap_batch = next(iter(loader))
                 real_batch = real_batch.to(device)
                 embed_batch = embed_batch.to(device)
