@@ -96,8 +96,21 @@ def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_di
     loader = get_fashion_dataloader(parquet, img_dir, batch_size)
     G = Generator(latent_dim, embed_dim).to(device)
     D = Discriminator(embed_dim).to(device)
-    G.apply(weights_init)
-    D.apply(weights_init)
+
+    start_epoch = 1
+    if resume_epoch is not None:
+        # load saved weights
+        g_path = f"{models_dir}/generator_final.pth"
+        d_path = f"{models_dir}/discriminator_final.pth"
+        print(f"Resuming from epoch {resume_epoch}")
+        G.load_state_dict(torch.load(g_path, map_location=device))
+        D.load_state_dict(torch.load(d_path, map_location=device))
+        start_epoch = resume_epoch + 1
+    else:
+        # fresh init
+        G.apply(weights_init)
+        D.apply(weights_init)
+
     opt_G = Adam(G.parameters(), lr=lr_G, betas=(0.5,0.999))
     opt_D = Adam(D.parameters(), lr=lr_D, betas=(0.5,0.999))
     criterion = nn.BCEWithLogitsLoss()
@@ -119,7 +132,7 @@ def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_di
     fid_list = []
     time_list =[]
 
-    for e in range(1, epochs + 1):
+    for e in range(start_epoch, epochs + 1):
         start_time = time.time()
         G.train()
         D.train()
