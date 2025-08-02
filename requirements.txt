@@ -3,3 +3,8 @@ torchvision
 numpy
 matplotlib
 tqdm
+torchmetrics
+open_clip_torch
+pandas
+pyarrow
+torch-fidelity

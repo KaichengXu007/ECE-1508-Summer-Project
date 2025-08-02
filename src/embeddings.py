@@ -70,7 +70,8 @@ if __name__ == "__main__":
     if dataset == 'fashion':
         # fashion-mnist
         root = "../data"
-        ds_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=False)
+        # ds_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=False)
+        ds_train = torchvision.datasets.FashionMNIST(root=root, train=False, download=False)
 
         label2text = [
             "T-shirt", "trouser", "pullover", "dress", "coat",
@@ -175,10 +176,14 @@ if __name__ == "__main__":
             "embedding": [vec.tolist() for vec in embeds]
         })
 
-    df.to_parquet(f'../data/{dataset}_{MODEL_NAME}_train_caps.parquet',
+    df.to_parquet(f'../data/{dataset}_{MODEL_NAME}_test_caps.parquet',
                   engine="pyarrow",
                   compression="zstd",
                   index=False)
+    # df.to_parquet(f'../data/{dataset}_{MODEL_NAME}_train_caps.parquet',
+    #               engine="pyarrow",
+    #               compression="zstd",
+    #               index=False)
     print('embeds saved')
 
     '''create sampled dataset, comment if don need it'''
