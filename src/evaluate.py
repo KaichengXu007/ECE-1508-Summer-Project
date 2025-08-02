@@ -14,27 +14,36 @@ from src.dataloader import get_fashion_dataloader
 from src.generator import Generator
 
 
-def save_real_fake_grid(real_imgs, fake_imgs, captions, path, n=8):
+def save_real_fake_grid(real_imgs, fake_imgs, captions, path, n=8, start_idx=0):
     """
     real_imgs, fake_imgs : tensors in (-1,1)  shape (B,3,H,W)
     captions            : list[str]
     path                : png path
+    n                   : number of images to show
+    start_idx           : starting index for which images to show
     """
-    real = torch.clamp((real_imgs[:n].cpu() + 1) * 0.5, 0, 1)  # → (0,1)
-    fake = torch.clamp((fake_imgs[:n].cpu() + 1) * 0.5, 0, 1)
+    # Select the slice of images starting from start_idx
+    real = torch.clamp((real_imgs[start_idx:start_idx+n].cpu() + 1) * 0.5, 0, 1)  # → (0,1)
+    fake = torch.clamp((fake_imgs[start_idx:start_idx+n].cpu() + 1) * 0.5, 0, 1)
+    selected_captions = captions[start_idx:start_idx+n]
 
     fig, axes = plt.subplots(2, n, figsize=(n * 2, 4))
     for row, imgs, row_name in zip(range(2), [real, fake], ["real", "fake"]):
         for col in range(n):
-            ax = axes[row, col]
-            img = TF.to_pil_image(imgs[col])
-            ax.imshow(img)
-            ax.axis("off")
-            if row == 0:
-                ax.set_title(captions[col], fontsize=6, pad=2)
-            if col == 0:
-                ax.set_ylabel(row_name, rotation=0, labelpad=25,
-                              fontsize=8, va="center")
+            if col < len(imgs):  # Make sure we have enough images
+                ax = axes[row, col]
+                img = TF.to_pil_image(imgs[col])
+                ax.imshow(img)
+                ax.axis("off")
+                if row == 0:
+                    ax.set_title(selected_captions[col], fontsize=6, pad=2)
+                if col == 0:
+                    ax.set_ylabel(row_name, rotation=0, labelpad=25,
+                                  fontsize=8, va="center")
+            else:
+                # Hide unused subplots if we don't have enough images
+                axes[row, col].axis("off")
+    
     plt.tight_layout()
     plt.savefig(path, dpi=300)
     plt.close()
@@ -90,7 +99,7 @@ def evaluate(parquet, img_dir, batch_size,
 
     # dataloader
     loader = get_fashion_dataloader(parquet, img_dir,
-                                    batch_size=batch_size, shuffle=False)
+                                    batch_size=batch_size, train=False, shuffle=False)
     print("Test dataset loaded")
 
     G = Generator(latent_dim, embed_dim).to(device)
@@ -144,7 +153,7 @@ def evaluate(parquet, img_dir, batch_size,
             # generate sample image
             if not first_batch_done:
                 save_real_fake_grid(real_imgs, fake_imgs,
-                                    captions, grid_path, n=8)
+                                    captions, grid_path, n=8, start_idx=8)
                 first_batch_done = True
 
     # 统计结果
@@ -165,14 +174,14 @@ def evaluate(parquet, img_dir, batch_size,
 
 if __name__ == "__main__":
     # params
-    parquet = "data/fashion_CLIP_test_caps.parquet"
-    img_dir = "data"
+    parquet = "../data/fashion_CLIP_test_caps.parquet"
+    img_dir = "../data"
     batch_size = 64
-    latent_dim = 100
+    latent_dim = 150
     embed_dim = 512
-    models_dir = "models"
-    results_dir = "results"
-    ckpt_path = os.path.join(models_dir, "generator_final.pth")
+    models_dir = "../models"
+    results_dir = "../results"
+    ckpt_path = os.path.join(models_dir, "generator_190.pth")
     # ---------------------------------------
 
     evaluate(parquet, img_dir, batch_size,

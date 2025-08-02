@@ -1,4 +1,5 @@
 # src/dataloader.py
+from collections import Counter
 
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
@@ -45,13 +46,16 @@ class FashionTextImageDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        # 1) Load image from FashionMNIST
-        image, _ = self.ds[idx]             # image is a PIL Image in mode "L"
+        # 1) Get the parquet row first to find the correct Fashion-MNIST index
+        row = self.df.iloc[idx]
+        fashion_mnist_idx = row['idx']  # The actual Fashion-MNIST index
+        
+        # 2) Load the correct image from FashionMNIST using the true index
+        image, _ = self.ds[fashion_mnist_idx]  # image is a PIL Image in mode "L"
         if self.transform:
             image = self.transform(image)   # → (1, 28, 28) tensor
 
-        # 2) Load corresponding embedding & caption
-        row = self.df.iloc[idx]
+        # 3) Load corresponding embedding & caption
         embedding = torch.tensor(row['embedding'], dtype=torch.float32)
         caption   = row['caption']
 
@@ -89,7 +93,7 @@ def get_fashion_dataloader(parquet_path: str,
                            batch_size: int = 64,
                            train: bool = True,
                            shuffle: bool = True,
-                           num_workers: int = 15):
+                           num_workers: int = 4):
     """
     Returns a DataLoader for the FashionTextImageDataset.
     """
@@ -109,20 +113,30 @@ def get_fashion_dataloader(parquet_path: str,
 if __name__ == '__main__':
     loader = get_fashion_dataloader(
         parquet_path='../data/fashion_CLIP_train_caps.parquet',
-        root='../data/FashionMNIST',
+        root='../data/',
         batch_size=4
     )
-    images, embeddings, captions = next(iter(loader))  # images.shape = [4,3,256,256]
 
-    # 2) Pick the first image and undo the Normalize(mean=0.5, std=0.5)
-    img = images[0]  # tensor shape (1, 28, 28), values in [-1, +1]
-    img = img * 0.5 + 0.5  # now in [0, 1]
+    all_captions = []
+    all_images = []
+    MAX_ITEMS = 500
 
-    # Display with Matplotlib
-    np_img = img.permute(1, 2, 0).cpu().numpy()  # HWC
-    plt.imshow(np_img, cmap='gray', vmin=0, vmax=1, interpolation='nearest')
-    plt.axis("off")
+    for imgs, _, captions in loader:
+        all_images.extend(imgs)  # imgs is a Tensor [B,1,28,28]
+        all_captions.extend(captions)
+        if len(all_captions) >= MAX_ITEMS:
+            break
+
+    # Undo Normalize(mean=0.5,std=0.5), then plot
+    plt.figure(figsize=(10, 10))
+    for i in range(min(16, len(all_images))):
+        img = all_images[i]  # Tensor [1,28,28]
+        img = img * 0.5 + 0.5  # back to [0,1]
+        np_img = img.squeeze().numpy()
+        ax = plt.subplot(4, 4, i + 1)
+        ax.imshow(np_img, cmap='gray', vmin=0, vmax=1)
+        ax.set_title(all_captions[i], fontsize=8)
+        ax.axis('off')
+
+    plt.tight_layout()
     plt.show()
-
-    print("First caption:", captions[0])
-    print("First embedding (first 10 dims):", embeddings[0][:10])
