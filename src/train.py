@@ -1,6 +1,4 @@
 import os
-
-import pandas as pd
 import torch
 import torch.nn as nn
 from torch.optim import Adam
@@ -139,7 +137,6 @@ def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_di
         epoch_loss_G, epoch_loss_D, n_batches = 0., 0., 0
 
         clip_scores_epoch = []
-        fid_scores_epoch = []
         fid_metric.reset()
 
         for real_imgs, embeds, captions in tqdm(loader):
@@ -218,17 +215,7 @@ def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_di
             with torch.no_grad():
                 samples = G(fixed_noise, fixed_embeds)
                 save_image((samples + 1) * 0.5, f"{results_dir}/sample_epoch{e}.png", nrow=4)
-            # with torch.no_grad():
-            #     # take first batch of embeddings for sampling
-            #     sample_embeds = next(iter(loader))[1][:16].to(device)
-            #     sample_z = torch.randn(sample_embeds.size(0), latent_dim, device=device)
-            #     samples = G(sample_z, sample_embeds)
-            #     save_image((samples + 1) * 0.5, f"{results_dir}/sample_epoch{e}.png", nrow=4)
-                # # take first batch of embeddings for sampling
-                # sample_embeds = next(iter(loader))[1][:16].to(device)
-                # sample_z = torch.randn(sample_embeds.size(0), latent_dim, device=device)
-                # samples = G(sample_z, sample_embeds)
-                # save_image((samples + 1) * 0.5, f"{results_dir}/sample_epoch{e}.png", nrow=4)
+
                 real_batch, embed_batch, cap_batch = next(iter(loader))
                 real_batch = real_batch.to(device)
                 embed_batch = embed_batch.to(device)
@@ -237,7 +224,7 @@ def train(parquet, img_dir, epochs, batch_size, lr_D, lr_G, latent_dim, embed_di
                 z = torch.randn(n, latent_dim, device=device)
                 fake_batch = G(z, embed_batch[:n])
 
-                grid_path = f"results/real_fake_epoch{e}.png"
+                grid_path = f"{results_dir}/real_fake_epoch{e}.png"
                 save_real_fake_grid(real_batch, fake_batch, cap_batch, grid_path, n=n)
 
             G.train()
