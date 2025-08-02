@@ -1,7 +1,6 @@
 import json
 import os
 import random
-import shutil
 from collections import defaultdict
 from tqdm import tqdm
 import torch
@@ -10,8 +9,6 @@ import pandas as pd
 import pyarrow  # used for parquet
 import open_clip
 import torchvision
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset, DataLoader
 
 
 @torch.no_grad()
@@ -76,15 +73,10 @@ if __name__ == "__main__":
         ds_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=False)
 
         label2text = [
-            "T-shirt or top", "trouser", "pullover", "dress", "coat",
+            "T-shirt", "trouser", "pullover", "dress", "coat",
             "sandal", "shirt", "sneaker", "bag", "ankle boot"
         ]
 
-        # captions = [
-        #     f"A grayscale image of a {label2text[label]}."
-        #     for label in ds_train.targets
-        # ]
-        #
 
         # randomly choose caption from templates
         caption_templates = [
