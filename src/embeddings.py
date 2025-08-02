@@ -73,10 +73,11 @@ if __name__ == "__main__":
     if dataset == 'fashion':
         # fashion-mnist
         root = "../data"
-        ds_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=False)
+        # ds_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=False)
+        ds_train = torchvision.datasets.FashionMNIST(root=root, train=False, download=False)
 
         label2text = [
-            "T-shirt or top", "trouser", "pullover", "dress", "coat",
+            "T-shirt", "trouser", "pullover", "dress", "coat",
             "sandal", "shirt", "sneaker", "bag", "ankle boot"
         ]
 
@@ -183,18 +184,22 @@ if __name__ == "__main__":
             "embedding": [vec.tolist() for vec in embeds]
         })
 
-    df.to_parquet(f'../data/{dataset}_{MODEL_NAME}_train_caps.parquet',
+    df.to_parquet(f'../data/{dataset}_{MODEL_NAME}_test_caps.parquet',
                   engine="pyarrow",
                   compression="zstd",
                   index=False)
+    # df.to_parquet(f'../data/{dataset}_{MODEL_NAME}_train_caps.parquet',
+    #               engine="pyarrow",
+    #               compression="zstd",
+    #               index=False)
     print('embeds saved')
 
     '''create sampled dataset, comment if don need it'''
-    os.makedirs(DEST_IMG_DIR, exist_ok=True)
-    for file_name in tqdm(df["file_name"], desc="Copying images"):
-        src_path = os.path.join(SOURCE_IMG_DIR, file_name)
-        dst_path = os.path.join(DEST_IMG_DIR, file_name)
-        shutil.copyfile(src_path, dst_path)
+    # os.makedirs(DEST_IMG_DIR, exist_ok=True)
+    # for file_name in tqdm(df["file_name"], desc="Copying images"):
+    #     src_path = os.path.join(SOURCE_IMG_DIR, file_name)
+    #     dst_path = os.path.join(DEST_IMG_DIR, file_name)
+    #     shutil.copyfile(src_path, dst_path)
 
     # read
     # df = pd.read_parquet("caps.parquet")
