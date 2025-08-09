@@ -47,11 +47,7 @@ def save_real_fake_grid(real_imgs, fake_imgs, captions, path, n=8, start_idx=0):
 
 
 def build_clip(device):
-    # ckpt_path = 'data/clip_v32/open_clip_pytorch_model.bin'
-    # model, _, preprocess = open_clip.create_model_and_transforms(
-    #     model_name="ViT-B-32",
-    #     pretrained=str(ckpt_path)
-    # )
+
     model, preprocess, _ = open_clip.create_model_and_transforms(
         model_name='ViT-B-32', pretrained='laion2b_s34b_b79k')
     model = model.to(device).eval()
