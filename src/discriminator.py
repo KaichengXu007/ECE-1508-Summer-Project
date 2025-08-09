@@ -48,6 +48,7 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(base_channels * 2),
             nn.LeakyReLU(0.2, inplace=True),
         )
+        
         # 7×7 → 1×1
         self.final_img = nn.Conv2d(base_channels * 2, base_channels * 2, 7, 1, 0)
         # Unconditional real/fake score

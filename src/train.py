@@ -11,7 +11,6 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from torch.cuda.amp import autocast
 import open_clip
 import matplotlib.pyplot as plt
-import numpy as np
 import torchvision.transforms.functional as TF
 from tqdm import tqdm
 import time

@@ -1,5 +1,4 @@
 import os
-import time
 import json
 import torch
 from tqdm import tqdm
@@ -19,8 +18,6 @@ def save_real_fake_grid(real_imgs, fake_imgs, captions, path, n=8, start_idx=0):
     real_imgs, fake_imgs : tensors in (-1,1)  shape (B,3,H,W)
     captions            : list[str]
     path                : png path
-    n                   : number of images to show
-    start_idx           : starting index for which images to show
     """
     # Select the slice of images starting from start_idx
     real = torch.clamp((real_imgs[start_idx:start_idx+n].cpu() + 1) * 0.5, 0, 1)  # → (0,1)
@@ -91,7 +88,7 @@ def clip_score(images, captions, clip_model, clip_preprocess,
 
 def evaluate(parquet, img_dir, batch_size,
              latent_dim, embed_dim, ckpt_path,
-             results_dir="results", models_dir="models"):
+             results_dir="results"):
     os.makedirs(results_dir, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -103,22 +100,15 @@ def evaluate(parquet, img_dir, batch_size,
     print("Test dataset loaded")
 
     G = Generator(latent_dim, embed_dim).to(device)
-    G.load_state_dict(torch.load(ckpt_path, map_location=device))
+    G.load_state_dict(torch.load(ckpt_path, map_location=device), strict=False)
     G.eval()
     print("Generator weights loaded")
 
-    # FID metric
-    # fid_metric = FrechetInceptionDistance(
-    #     normalize=True,
-    #     feature_extractor_weights_path=
-    #     "data/pt_inception-2015-12-05-6726825d.pth"
-    # ).to(device)
     fid_metric = FrechetInceptionDistance(normalize=True).to(device)
 
     # CLIP
     clip_model, clip_preprocess, tokenizer = build_clip(device)
 
-    fid_scores = []
     clip_scores = []
 
     first_batch_done = False
@@ -186,4 +176,4 @@ if __name__ == "__main__":
 
     evaluate(parquet, img_dir, batch_size,
              latent_dim, embed_dim, ckpt_path,
-             results_dir, models_dir)
+             results_dir)
