@@ -40,6 +40,16 @@ This project implements a text-to-image generation pipeline using a Conditional 
 data/
     ├── annotations/
         └── captions_train2017.json
+    ├── FashionMNIST/
+        └── raw/
+            ├── t10k-images-idx3-ubyte
+            ├── t10k-images-idx3-ubyte.gz
+            ├── t10k-labels-idx1-ubyte
+            ├── t10k-labels-idx1-ubyte.gz
+            ├── train-images-idx3-ubyte
+            ├── train-images-idx3-ubyte.gz
+            ├── train-labels-idx1-ubyte
+            └── train-labels-idx1-ubyte.gz
     ├── fashion_CLIP_test_caps.parquet
     ├── fashion_CLIP_train_caps.parquet
     └── roberta-base_train_caps.parquet
