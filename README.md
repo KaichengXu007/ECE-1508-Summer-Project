@@ -40,8 +40,18 @@ This project implements a text-to-image generation pipeline using a Conditional 
 data/
     ├── annotations/
         └── captions_train2017.json
+    ├── fashion_CLIP_test_caps.parquet
     ├── fashion_CLIP_train_caps.parquet
     └── roberta-base_train_caps.parquet
+demo_results/
+    ├── eval_real_fake.png
+    └── fid_result.json
+models/
+    └── generator_190.pth
+results/
+    ├── eval_real_fake.png
+    ├── eval_result.json
+    └── result.json
 src/
     ├── dataloader.py
     ├── discriminator.py
@@ -65,6 +75,7 @@ text2img_results/
     ├── text2img.png
     ├── top.png
     └── trouser.png
+demo.ipynb
 main.py
 README.md
 requirements.txt
