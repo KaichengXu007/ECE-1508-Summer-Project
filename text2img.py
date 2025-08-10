@@ -8,28 +8,27 @@ import os
 import open_clip
 from open_clip import tokenize
 
-def prompt2img():
-
-    os.makedirs('./text2img_results', exist_ok=True)
-
-    # 1) device and hyper-params
-    device    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def load_models(model_path="./models/generator_190.pth", device=None):
+    """
+    Load the generator and CLIP models
+    
+    Returns:
+        generator: Loaded generator model
+        clip_model: Loaded CLIP text encoder
+        device: Device being used
+    """
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
     latent_dim = 150
-    embed_dim  = 512   # for roberta-base
-    model_path = "./models/generator_280.pth"
-
-    # 2) load Generator
-    G = Generator(latent_dim, embed_dim).to(device)
-    G.load_state_dict(torch.load(model_path, map_location=device))
-    G.eval()
-
-    # 3) load and freeze text encoder
-    # tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
-    # text_model = RobertaModel.from_pretrained("roberta-base")\
-    #                      .to(device).eval()
-    # for p in text_model.parameters(): p.requires_grad_(False)
-
-    # 3) load and freeze CLIP text encoder
+    embed_dim = 512
+    
+    # Load Generator
+    generator = Generator(latent_dim, embed_dim).to(device)
+    generator.load_state_dict(torch.load(model_path, map_location=device))
+    generator.eval()
+    
+    # Load CLIP text encoder
     clip_model, _, _ = open_clip.create_model_and_transforms(
         model_name="ViT-B-32",
         pretrained="laion2b_s34b_b79k"
@@ -37,35 +36,61 @@ def prompt2img():
     clip_model = clip_model.to(device).eval()
     for p in clip_model.parameters():
         p.requires_grad = False
+    
+    return generator, clip_model, device
 
-    clip_tok = open_clip.get_tokenizer("ViT-B-32")
-
-    # 4) ask the user for their prompt
-    prompt = input("Enter your image prompt: ")
-
-    # 5) get embedding
-    # embed = roberta_embed(
-    #     prompt,
-    #     tokenizer,
-    #     text_model,
-    #     device,
-    #     pooling="mean"
-    # ).to(device)
-    tokens = tokenize([prompt]).to(device)
+def generate_from_prompts(prompts, generator, clip_model, device, latent_dim=150):
+    """
+    Generate images from text prompts
+    
+    Args:
+        prompts: List of text prompts
+        generator: Loaded generator model
+        clip_model: Loaded CLIP model
+        device: Device to use
+        latent_dim: Latent dimension for noise
+        
+    Returns:
+        generated_images: Tensor of generated images [0,1]
+    """
+    # Get embeddings
+    tokens = tokenize(prompts).to(device)
     with torch.no_grad():
-        embed = clip_model.encode_text(tokens)  # → (1, 512)
+        embed = clip_model.encode_text(tokens)
     embed = embed.to(device)
-
-    # 6) sample noise + generate
-    z = torch.randn(1, latent_dim, device=device)
-
+    
+    # Generate images
+    batch_size = embed.size(0)
+    z = torch.randn(batch_size, latent_dim, device=device)
+    
     with torch.no_grad():
-        fake = G(z, embed)  # both are 4-D now
+        fake = generator(z, embed)
+    
+    # Convert from [-1,1] to [0,1]
+    out = (fake + 1) * 0.5
+    
+    return out
 
-    out = (fake + 1) * 0.5  # [-1,1] → [0,1]
-
-    # 7) save result
-    save_image(out, './text2img_results/text2img.png', nrow=1)
+def prompt2img():
+    """
+    Original function for backward compatibility
+    """
+    os.makedirs('./text2img_results', exist_ok=True)
+    
+    # Load models
+    generator, clip_model, device = load_models()
+    
+    # Generate image
+    prompts = ["A picture of a shirt"]
+    out = generate_from_prompts(prompts, generator, clip_model, device)
+    
+    # Save result
+    save_image(
+        out,
+        'text2img_results/shirt_new_prompt.png',
+        nrow=len(prompts),
+        normalize=False
+    )
     print("Image saved")
 
 if __name__ == "__main__":
