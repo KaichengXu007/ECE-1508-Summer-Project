@@ -1,4 +1,17 @@
-# ECE-1508-Summer-Project
+# ECE-1508-Summer-Project: Text-to-Image Generation with Conditional GAN and CLIP Embeddings
+
+This project implements a text-to-image generation pipeline using a Conditional GAN (cGAN) trained on the Fashion-MNIST dataset with synthetic captions. A frozen CLIP text encoder provides semantically rich text embeddings, enabling the generator to produce images conditioned on natural language descriptions.
+
+### Features
+- **Custom Dataset Loader** for Fashion-MNIST with precomputed CLIP embeddings and captions stored in Parquet format.
+- **Generator and Projection Discriminator** architectures tailored for 28×28 grayscale images.
+- **Synthetic Caption Generation** using flexible templates to improve generalization.
+- **Frozen CLIP (ViT-B/32) Text Encoder** for extracting 512-dimensional sentence embeddings with strong visual grounding.
+- **Training Pipeline** with periodic evaluation of Fréchet Inception Distance (FID) and CLIP score.
+- **Evaluation Script** to generate real vs. fake comparison grids and compute both quantitative and qualitative metrics.
+- **Utility Functions** for computing CLIP similarity between images and text prompts.
+- **Plotting Tools** to visualize training curves such as loss, FID, and CLIP score over epochs.
+
 
 ### Embedding
 1. dataset: 
@@ -24,42 +37,63 @@
 ## Project Structure
 
 ```bash
-ECE-1508-Summer-Project/
-│
-├── data/
-│   │
-│   ├── annotations/
-│   │   └── captions_train2017.json
-│   │
-│   ├── train2017/
-│   │   ├── 000000000009.jpg
-│   │   ├── 000000000025.jpg
-│   │   └── ... (其他 MS-COCO 原始图片)
-│   │
-│   └── roberta-base_train_caps.parquet  (由 embeddings.py 生成的数据文件)
-│
-├── src/
-│   │
-│   ├── __init__.py
-│   ├── dataset.py          # (推荐) 将数据加载类从 train.py 中移到这里
-│   ├── discriminator.py
-│   ├── generator.py
-│   ├── embeddings.py
-│   └── train.py
-│
-├── output/
-│   │
-│   ├── images/
-│   │   ├── fake_samples_epoch_0.png
-│   │   ├── fake_samples_epoch_1.png
-│   │   └── ...
-│   │
-│   └── checkpoints/
-│       ├── netG_epoch_0.pth
-│       ├── netD_epoch_0.pth
-│       └── ...
-│
-├── .gitignore
-├── README.md
-└── requirements.txt
+data/
+    ├── annotations/
+        └── captions_train2017.json
+    ├── fashion_CLIP_train_caps.parquet
+    └── roberta-base_train_caps.parquet
+src/
+    ├── dataloader.py
+    ├── discriminator.py
+    ├── embeddings.py
+    ├── evaluate.py
+    ├── generator.py
+    ├── plot.py
+    ├── train.py
+    └── utils.py
+text2img_results/
+    ├── ankle_boot.png
+    ├── bag.png
+    ├── coat.png
+    ├── dress.png
+    ├── pullover.png
+    ├── sandal.png
+    ├── shirt.png
+    ├── sneaker.png
+    ├── T-shirt or top.png
+    ├── T-shirt.png
+    ├── text2img.png
+    ├── top.png
+    └── trouser.png
+main.py
+README.md
+requirements.txt
+text2img.py
 ```
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/KaichengXu007/ECE-1508-Summer-Project.git
+2. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+
+### Usage
+
+1. Data Preparation
+   ```bash
+   python src/embeddings.py
+2. Train the Model
+   ```bash
+   python main.py
+3. Evaluate the Model
+   ```bash
+   python src/evaluate.py
+4. Plot Training Curves
+   ```bash
+   python src/plot.py
+5. Generate Images
+   ```bash
+   python text2img.py
